@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'SUPERADMIN');
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.role in ['SUPERADMIN', 'ADMIN'] || request.auth.token.admin == true);
+    }
+    
+    function isSupervisor() {
+      return isAuthenticated() && 
+        (request.auth.token.role in ['SUPERADMIN', 'ADMIN', 'SUPERVISOR']);
+    }
+    
+    function isOperator() {
+      return isAuthenticated() && 
+        (request.auth.token.role in ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'OPERATOR']);
+    }
+
+    // Default: Authenticated access for internal platform operations
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOperator();
+      allow delete: if isAdmin();
+    }
+    
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isOperator();
+    }
+    
+    match /human_tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isOperator();
+    }
+    
+    match /application_attempts/{attemptId} {
+      allow read: if isAuthenticated();
+      // Application attempts are immutable historical records
+      allow create: if isOperator();
+      allow update: if isSupervisor();
+      allow delete: if false;
+    }
+    
+    match /audit_logs/{auditId} {
+      allow read: if isAuthenticated();
+      // Append-only audit logs
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    match /system_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /settings_history/{historyId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+    
+    match /operators/{operatorId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /user_accounts/{userId} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow write: if isSuperAdmin();
+    }
+
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

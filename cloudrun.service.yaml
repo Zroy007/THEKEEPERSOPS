@@ -1,0 +1,81 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: workflow-operations-platform
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false" # Keep background worker loops running
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: workflow-platform-runner@my-gcp-project-id.iam.gserviceaccount.com
+      containers:
+        - image: gcr.io/my-gcp-project-id/workflow-operations-platform:latest
+          resources:
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          ports:
+            - name: http1
+              containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: MOCK_MODE
+              value: "false"
+            - name: FIRESTORE_DATABASE_ID
+              value: "(default)"
+            # References to GCP Secret Manager
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: WORKFLOW_JWT_SECRET
+            - name: GOLOGIN_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: GOLOGIN_API_TOKEN
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: TELEGRAM_BOT_TOKEN
+            - name: TELEGRAM_DEFAULT_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: TELEGRAM_DEFAULT_CHAT_ID
+            - name: AZURE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: latest
+                  name: AZURE_CLIENT_SECRET
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            periodSeconds: 10
+            failureThreshold: 3

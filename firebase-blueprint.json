@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Job": {
+      "title": "Job",
+      "description": "Browser automation workflow job record",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "shopName": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string" },
+        "subStatus": { "type": "string" },
+        "priority": { "type": "string" },
+        "operatorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jobId", "shopName", "email", "status"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "GoLogin cloud browser session record",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "jobId": { "type": "string" },
+        "gologinProfileId": { "type": "string" },
+        "status": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sessionId", "jobId", "status"]
+    },
+    "HumanTask": {
+      "title": "HumanTask",
+      "description": "Manual human checkpoint task",
+      "type": "object",
+      "properties": {
+        "humanTaskId": { "type": "string" },
+        "jobId": { "type": "string" },
+        "taskType": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "assignedOperatorId": { "type": "string" }
+      },
+      "required": ["humanTaskId", "jobId", "taskType", "status"]
+    },
+    "ApplicationAttempt": {
+      "title": "ApplicationAttempt",
+      "description": "Historical reapplication attempt record",
+      "type": "object",
+      "properties": {
+        "attemptId": { "type": "string" },
+        "attemptNo": { "type": "number" },
+        "jobId": { "type": "string" },
+        "finalStatus": { "type": "string" }
+      },
+      "required": ["attemptId", "attemptNo", "jobId", "finalStatus"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable audit record",
+      "type": "object",
+      "properties": {
+        "auditId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "actor": { "type": "string" },
+        "action": { "type": "string" },
+        "result": { "type": "string" }
+      },
+      "required": ["auditId", "timestamp", "actor", "action"]
+    }
+  },
+  "firestore": {
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Workflow jobs collection"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Active and historical browser sessions"
+    },
+    "/human_tasks/{taskId}": {
+      "schema": "HumanTask",
+      "description": "Pending and completed human verification checkpoints"
+    },
+    "/application_attempts/{attemptId}": {
+      "schema": "ApplicationAttempt",
+      "description": "Immutable historical application submissions"
+    },
+    "/audit_logs/{auditId}": {
+      "schema": "AuditLog",
+      "description": "System and operator audit log trail"
+    }
+  }
+}
